@@ -2,6 +2,9 @@ on:
   release:
     types: [created]
 
+env:
+  ASI_LOADER_VERSION: "4.68"
+
 name: Build Release
 jobs:
   build:
@@ -21,7 +24,7 @@ jobs:
           args: --release
       - name: Download Ultimate ASI Loader
         run: |
-          wget https://github.com/ThirteenAG/Ultimate-ASI-Loader/releases/download/v4.68/Ultimate-ASI-Loader_x64.zip
+          Invoke-WebRequest "https://github.com/ThirteenAG/Ultimate-ASI-Loader/releases/download/v${env:ASI_LOADER_VERSION}/Ultimate-ASI-Loader_x64.zip" -OutFile ./Ultimate-ASI-Loader_x64.zip
           7z x .\Ultimate-ASI-Loader_x64.zip dinput8.dll
       - run: mkdir staging
       - name: Create the mod archive
@@ -29,7 +32,7 @@ jobs:
         run: |
           mkdir -p ./system/plugins
           cp ../target/release/crony_gui.dll ./system/plugins/crony_gui.asi
-          cp ./dinput8.dll ./system/version.dll
+          cp ../dinput8.dll ./system/version.dll
           7z a -mx=9 -r ./crony-gui.zip *
       - name: Upload the mod archive
         uses: actions/upload-release-asset@v1

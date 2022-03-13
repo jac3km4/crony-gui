@@ -2,7 +2,7 @@
 Small WIP script hook/extender for Elex 2
 
 ### how to
-This library uses [Rhai](https://rhai.rs) as the scripting languages.
+This library uses [Rhai](https://rhai.rs) as the scripting language.
 You can find available game functions [here](https://github.com/jac3km4/crony-gui/tree/master/doc/FUNCTIONS.md).
 
 ### demo
