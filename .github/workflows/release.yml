@@ -1,0 +1,42 @@
+on:
+  release:
+    types: [created]
+
+name: Build Release
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Prepare toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+      - uses: Swatinem/rust-cache@v1
+      - name: Build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release
+      - name: Download Ultimate ASI Loader
+        run: |
+          wget https://github.com/ThirteenAG/Ultimate-ASI-Loader/releases/download/v4.68/Ultimate-ASI-Loader_x64.zip
+          7z x .\Ultimate-ASI-Loader_x64.zip dinput8.dll
+      - run: mkdir staging
+      - name: Create the mod archive
+        working-directory: staging
+        run: |
+          mkdir -p ./system/plugins
+          cp ../target/release/crony_gui.dll ./system/plugins/crony_gui.asi
+          cp ./dinput8.dll ./system/version.dll
+          7z a -mx=9 -r ./crony-gui.zip *
+      - name: Upload the mod archive
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./staging/crony-gui.zip
+          asset_name: crony-gui-${{ github.event.release.tag_name }}.zip
+          asset_content_type: application/zip

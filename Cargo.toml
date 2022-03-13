@@ -1,0 +1,13 @@
+[package]
+name = "crony-gui"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+egui = "0.17"
+egui-hook = { git = "https://github.com/jac3km4/egui-hook", rev = "v0.0.1" }
+rhai = "1.5"
+phf = { version = "0.10", features = ["macros"] }
