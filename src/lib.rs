@@ -11,6 +11,13 @@ egui_hook!(ScriptHost, ui);
 fn ui(ctx: &Context, app: &mut ScriptHost) {
     const DEFAULT_SIZE: Vec2 = Vec2::new(600., 320.);
 
+    if ctx.input().key_pressed(Key::Home) {
+        app.toggle();
+    }
+    if !app.is_active() {
+        return;
+    }
+
     Window::new("CRONY GUI")
         .default_size(DEFAULT_SIZE)
         .show(ctx, |ui| {

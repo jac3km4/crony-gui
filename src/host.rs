@@ -9,6 +9,7 @@ use crate::elex::FunctionPtr;
 pub struct ScriptHost {
     pub(crate) cmd: String,
     pub(crate) history: String,
+    is_active: bool,
     engine: Engine,
     scope: Scope<'static>,
 }
@@ -20,6 +21,7 @@ impl Default for ScriptHost {
         Self {
             cmd: String::new(),
             history: String::new(),
+            is_active: false,
             engine,
             scope: Scope::new(),
         }
@@ -55,6 +57,14 @@ impl ScriptHost {
             }
         }
         module
+    }
+
+    pub fn toggle(&mut self) {
+        self.is_active = !self.is_active;
+    }
+
+    pub fn is_active(&self) -> bool {
+        self.is_active
     }
 }
 

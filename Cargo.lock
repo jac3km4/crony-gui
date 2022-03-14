@@ -148,7 +148,7 @@ dependencies = [
 [[package]]
 name = "egui-hook"
 version = "0.1.0"
-source = "git+https://github.com/jac3km4/egui-hook?rev=v0.0.1#f8316acbfbf2511cd1fbc68c13b9fa69f6452873"
+source = "git+https://github.com/jac3km4/egui-hook?rev=v0.0.2#df989a07d9493c0673c286fe744f1fe7f68ee664"
 dependencies = [
  "egui-d3d11",
  "kiero4rs",

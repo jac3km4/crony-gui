@@ -1,8 +1,9 @@
 ## C.R.O.N.Y GUI
 Small WIP script hook/extender for Elex 2
 
-### how to
+### how it works
 This library uses [Rhai](https://rhai.rs) as the scripting language.
+A script console can be toggled with the Home key.
 You can find available game functions [here](https://github.com/jac3km4/crony-gui/tree/master/doc/FUNCTIONS.md).
 
 ### demo
