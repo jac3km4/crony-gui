@@ -11,6 +11,7 @@ egui_hook!(ScriptHost, ui);
 fn ui(ctx: &Context, app: &mut ScriptHost) {
     const DEFAULT_SIZE: Vec2 = Vec2::new(600., 320.);
 
+    let was_active = app.is_active();
     if ctx.input().key_pressed(Key::Home) {
         app.toggle();
     }
@@ -38,9 +39,14 @@ fn ui(ctx: &Context, app: &mut ScriptHost) {
                 .desired_width(600.)
                 .show(ui);
 
+            if app.is_active() != was_active {
+                input.response.request_focus();
+            }
+
             if ui.input().key_pressed(Key::Enter) {
                 input.response.request_focus();
                 app.process_command();
             };
+            app.process_events();
         });
 }

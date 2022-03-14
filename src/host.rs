@@ -1,7 +1,7 @@
-use std::borrow::Cow;
 use std::fmt::Debug;
+use std::sync::mpsc;
 
-use rhai::{Engine, Module, Scope};
+use rhai::{Dynamic, Engine, Module, Scope};
 
 use crate::elex::FunctionPtr;
 
@@ -9,6 +9,7 @@ use crate::elex::FunctionPtr;
 pub struct ScriptHost {
     pub(crate) cmd: String,
     pub(crate) history: String,
+    log_receiver: mpsc::Receiver<String>,
     is_active: bool,
     engine: Engine,
     scope: Scope<'static>,
@@ -17,10 +18,17 @@ pub struct ScriptHost {
 impl Default for ScriptHost {
     fn default() -> Self {
         let mut engine = Engine::new();
+        let (tx, tr) = mpsc::channel();
+
         engine.register_static_module("game", ScriptHost::create_game_module().into());
+        engine.register_fn("log", move |val: Dynamic| {
+            tx.send(val.to_string()).ok();
+        });
+
         Self {
             cmd: String::new(),
             history: String::new(),
+            log_receiver: tr,
             is_active: false,
             engine,
             scope: Scope::new(),
@@ -33,17 +41,26 @@ impl ScriptHost {
         self.history.push_str(&self.cmd);
         self.history.push('\n');
 
-        let out = self.handle_command();
-        self.history.push_str(&out);
+        if let Err(err) = self.engine.run_with_scope(&mut self.scope, &self.cmd) {
+            self.history.push_str(&err.to_string());
+            self.history.push('\n');
+        }
         self.cmd.clear();
     }
 
-    fn handle_command(&mut self) -> Cow<'static, str> {
-        let res = self.engine.run_with_scope(&mut self.scope, &self.cmd);
-        match res {
-            Ok(()) => Cow::Borrowed(""),
-            Err(err) => Cow::Owned(err.to_string() + "\n"),
+    pub fn process_events(&mut self) {
+        while let Ok(str) = self.log_receiver.try_recv() {
+            self.history.push_str(&str);
+            self.history.push('\n');
         }
+    }
+
+    pub fn toggle(&mut self) {
+        self.is_active = !self.is_active;
+    }
+
+    pub fn is_active(&self) -> bool {
+        self.is_active
     }
 
     fn create_game_module() -> Module {
@@ -57,14 +74,6 @@ impl ScriptHost {
             }
         }
         module
-    }
-
-    pub fn toggle(&mut self) {
-        self.is_active = !self.is_active;
-    }
-
-    pub fn is_active(&self) -> bool {
-        self.is_active
     }
 }
 

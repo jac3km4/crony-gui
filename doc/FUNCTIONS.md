@@ -2,6 +2,7 @@
 All game functions are in a `game` namespace, they can be called like this:
 ```rhai
 game::GiveXP(1)
+log(game::GetRamAttackRange())
 game::OnQuestSuccess_Player_TraitorToHumanity()
 game::Kill()
 ```
