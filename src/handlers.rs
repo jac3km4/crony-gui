@@ -1,7 +1,10 @@
 use phf::phf_map;
 
-use crate::custom_handler;
-use crate::host::CustomHandler;
+use crate::elex::{Entity, FunctionPtr};
+use crate::host::ExportedFunction;
+use crate::{custom_handler, type_handler};
+
+pub type CustomHandler = fn(FunctionPtr) -> ExportedFunction;
 
 #[inline]
 pub fn get_custom_handler(name: &str) -> Option<&CustomHandler> {
@@ -9,7 +12,21 @@ pub fn get_custom_handler(name: &str) -> Option<&CustomHandler> {
 }
 
 // some functions accept extra arguments, they can be defined here
-pub static CUSTOM_HANDLERS: phf::Map<&'static str, CustomHandler> = phf_map! {
-    "GiveXP" => custom_handler!(i64),
-    "GiveQuestXP" => custom_handler!(i64),
+static CUSTOM_HANDLERS: phf::Map<&'static str, CustomHandler> = phf_map! {
+    "advance_time" => type_handler!(i64),
+    "give_quest_xp" => type_handler!(i64),
+    "give_xp" => type_handler!(i64),
+    "on_info_advance_playing_time_by_hours" => type_handler!(i64),
+    "set_player_rank" => type_handler!(i64),
+    "set_target_hour" => type_handler!(i64),
+
+    "auto_loot" => custom_handler! { |ptr: FunctionPtr|
+        move |looter: Entity, target: Entity| ptr.invoke_with(looter, target, ())
+    },
+    "kill" => custom_handler! { |ptr: FunctionPtr|
+        move |instigator: Entity, target: Entity| ptr.invoke_with(instigator, target, ())
+    },
+    "join_player_party" => custom_handler! { |ptr: FunctionPtr|
+        move |entity: Entity| ptr.invoke_with(entity, Entity::null(), ())
+    },
 };

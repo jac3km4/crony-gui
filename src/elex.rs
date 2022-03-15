@@ -9,8 +9,31 @@ pub fn get_all_functions<'a>() -> impl Iterator<Item = (Cow<'a, str>, FunctionPt
         .map(|fun| (fun.name(), fun.ptr()))
 }
 
-import_foreign!(0x040B710, get_player() -> *const Player);
+pub fn get_player() -> Entity {
+    Entity(get_player_ptr())
+}
+
+pub fn get_player_look_at() -> Entity {
+    let player = get_player();
+    let mut entity = Entity(std::ptr::null());
+    get_player_look_at_ptr(&player, &mut entity);
+    entity
+}
+
 import_foreign!(0x0867080, get_function_registry() -> *const FunctionRegistry);
+import_foreign!(0x040B710, get_player_ptr() -> *const GameObject);
+import_foreign!(0x0B17FF0, get_player_look_at_ptr(player: *const Entity, entity: *mut Entity) -> ());
+
+#[derive(Debug, Clone, Copy)]
+#[repr(C)]
+pub struct Entity(*const GameObject);
+
+impl Entity {
+    #[inline]
+    pub fn null() -> Entity {
+        Entity(std::ptr::null())
+    }
+}
 
 #[derive(Debug)]
 #[repr(C)]
@@ -36,6 +59,7 @@ struct FunctionList {
 }
 
 impl FunctionList {
+    #[inline]
     pub fn as_slice(&self) -> &[FunctionDef] {
         unsafe { std::slice::from_raw_parts(self.items, self.count as usize) }
     }
@@ -51,10 +75,12 @@ pub struct FunctionDef {
 }
 
 impl FunctionDef {
+    #[inline]
     pub fn name<'a>(&self) -> Cow<'a, str> {
         unsafe { std::ffi::CStr::from_ptr(self.name) }.to_string_lossy()
     }
 
+    #[inline]
     pub fn ptr(&self) -> FunctionPtr {
         FunctionPtr(self.ptr)
     }
@@ -64,11 +90,17 @@ impl FunctionDef {
 pub struct FunctionPtr(usize);
 
 impl FunctionPtr {
+    #[inline]
     pub fn invoke_default<A>(&self, val: A) -> i64 {
         let ptr = get_player();
-        let func: extern "C" fn(*const Player, *const Player, A) -> i64 =
-            unsafe { transmute(self.0) };
+        let func: extern "C" fn(Entity, Entity, A) -> i64 = unsafe { transmute(self.0) };
         func(ptr, ptr, val)
+    }
+
+    #[inline]
+    pub fn invoke_with<A>(&self, a: Entity, b: Entity, val: A) -> i64 {
+        let func: extern "C" fn(Entity, Entity, A) -> i64 = unsafe { transmute(self.0) };
+        func(a, b, val)
     }
 }
 
@@ -112,4 +144,4 @@ pub struct Type;
 
 // TODO: reverse
 #[repr(C)]
-pub struct Player;
+pub struct GameObject;

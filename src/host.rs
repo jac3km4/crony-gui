@@ -1,9 +1,12 @@
+use std::any::TypeId;
 use std::fmt::Debug;
 use std::sync::mpsc;
 
-use rhai::{Dynamic, Engine, Module, Scope};
+use heck::ToSnakeCase;
+use rhai::plugin::CallableFunction;
+use rhai::{Dynamic, Engine, FnAccess, FnNamespace, Module, RegisterNativeFunction, Scope};
 
-use crate::elex::FunctionPtr;
+use crate::{elex, handlers};
 
 #[derive(Debug)]
 pub struct ScriptHost {
@@ -21,6 +24,8 @@ impl Default for ScriptHost {
         let (tx, tr) = mpsc::channel();
 
         engine.register_static_module("game", ScriptHost::create_game_module().into());
+        engine.register_static_module("entity", ScriptHost::create_entity_module().into());
+
         engine.register_fn("log", move |val: Dynamic| {
             tx.send(val.to_string()).ok();
         });
@@ -66,22 +71,59 @@ impl ScriptHost {
     fn create_game_module() -> Module {
         let mut module = Module::new();
 
-        for (name, ptr) in crate::elex::get_all_functions() {
-            if let Some(custom_handler) = crate::handlers::get_custom_handler(name.as_ref()) {
-                custom_handler(name.as_ref(), &mut module, ptr.clone());
+        for (name, ptr) in elex::get_all_functions() {
+            let name = name.to_snake_case();
+            if let Some(custom_handler) = handlers::get_custom_handler(&name) {
+                custom_handler(ptr).add(&name, &mut module);
             } else {
-                module.set_native_fn(name.as_ref(), move || Ok(ptr.invoke_default(())));
+                module.set_native_fn(&name, move || Ok(ptr.invoke_default(())));
             }
         }
         module
     }
+
+    fn create_entity_module() -> Module {
+        let mut module = Module::new();
+        module.set_native_fn("get_player", || Ok(elex::get_player()));
+        module.set_native_fn("get_look_at", || Ok(elex::get_player_look_at()));
+        module.set_native_fn("none", || Ok(elex::Entity::null()));
+        module
+    }
 }
 
-pub type CustomHandler = fn(&str, &mut Module, FunctionPtr) -> u64;
+pub struct ExportedFunction(CallableFunction, Box<[TypeId]>);
+
+impl ExportedFunction {
+    #[inline]
+    pub fn new<A: RegisterNativeFunction<Args, Ret>, Args, Ret>(val: A) -> Self {
+        Self(val.into_callable_function(), A::param_types())
+    }
+
+    #[inline]
+    fn add(self, name: &str, module: &mut Module) {
+        module.set_fn(
+            name,
+            FnNamespace::Internal,
+            FnAccess::Public,
+            None,
+            self.1,
+            self.0,
+        );
+    }
+}
 
 #[macro_export]
 macro_rules! custom_handler {
+    ($expr:expr) => {
+        |ptr| $crate::host::ExportedFunction::new($expr(ptr))
+    };
+}
+
+#[macro_export]
+macro_rules! type_handler {
     ($ty:ty) => {
-        |name, module, ptr| module.set_native_fn(name, move |val: $ty| Ok(ptr.invoke_default(val)))
+        custom_handler! { |ptr: $crate::elex::FunctionPtr|
+            move |arg: $ty| ptr.invoke_default(arg)
+        }
     };
 }
