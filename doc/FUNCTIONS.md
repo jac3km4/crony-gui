@@ -15,7 +15,7 @@ game::auto_loot(entity::get_player(), entity::get_look_at())
 // kill anything you're looking at as the player
 game::kill(entity::get_player(), entity::get_look_at())
 
-// kill anything you're looking at as 
+// kill anything you're looking at as no one
 game::kill(entity::none(), entity::get_look_at())
 
 // log the ram attack range
@@ -35,7 +35,6 @@ game::on_quest_success_player_traitor_to_humanity()
 - `on_info_advance_playing_time_by_hours(hours: i64)`
 - `set_player_rank(rank: i64)`
 - `set_target_hour(hour: i64)`
-
 - `movement_callback()`
 - `movement_sneaking_callback()`
 - `movement_blocked_callback()`
