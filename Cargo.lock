@@ -75,7 +75,10 @@ version = "0.1.0"
 dependencies = [
  "egui",
  "egui-hook",
+ "flexi_logger",
  "heck",
+ "log",
+ "pelite",
  "phf",
  "rhai",
 ]
@@ -125,6 +128,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "dataview"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "47a802a2cad0ff4dfc4f3110da174b7a6928c315cae523e88638cfb72941b4d5"
+
+[[package]]
 name = "egui"
 version = "0.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -138,7 +147,7 @@ dependencies = [
 [[package]]
 name = "egui-d3d11"
 version = "0.5.1"
-source = "git+https://github.com/sy1ntexx/egui-d3d11?rev=8ba057b#8ba057b958187b52b1fa4f29db758bc82a9c7e2b"
+source = "git+https://github.com/jac3km4/egui-d3d11?rev=ae0ccd1#ae0ccd124f675734cc8972830006a3307fb952c9"
 dependencies = [
  "egui",
  "parking_lot",
@@ -149,8 +158,9 @@ dependencies = [
 [[package]]
 name = "egui-hook"
 version = "0.1.0"
-source = "git+https://github.com/jac3km4/egui-hook?rev=v0.0.3#7ef891a512f303e4ed5acc93263cbb2676cf7c61"
+source = "git+https://github.com/jac3km4/egui-hook?rev=v0.0.4#959a1c320d070d83b2e6319a140b663ff44ed948"
 dependencies = [
+ "egui",
  "egui-d3d11",
  "kiero4rs",
  "log",
@@ -178,6 +188,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "flexi_logger"
+version = "0.22.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "969940c39bc718475391e53a3a59b0157e64929c80cf83ad5dde5f770ecdc423"
+dependencies = [
+ "glob",
+ "lazy_static",
+ "log",
+ "rustversion",
+ "thiserror",
+ "time",
+]
+
+[[package]]
 name = "fuchsia-cprng"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -195,6 +219,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "glob"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9b919933a397b79c37e33b77bb2aa3dc8eb6e165ad809e58ff75bc7db2e34574"
+
+[[package]]
 name = "heck"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -210,6 +240,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "itoa"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1aab8fc367588b89dcee83ab0fd66b72b50b72fa1904d7095045ace2b0c81c35"
+
+[[package]]
 name = "kiero4rs"
 version = "0.1.0"
 source = "git+https://github.com/jac3km4/kiero4rs?rev=v0.0.1#32e894a8a5f4d7e1432762c706146d04f28556b7"
@@ -218,6 +254,12 @@ dependencies = [
  "cxx-build",
  "tempdir",
 ]
+
+[[package]]
+name = "lazy_static"
+version = "1.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 
 [[package]]
 name = "libc"
@@ -253,6 +295,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "no-std-compat"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b93853da6d84c2e3c7d730d6473e8817692dd89be387eb01b94d7f108ecb5b8c"
+
+[[package]]
 name = "nohash-hasher"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -265,6 +313,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9a64b1ec5cda2586e284722486d802acf1f7dbdc623e2bfc57e65ca1cd099290"
 dependencies = [
  "autocfg",
+]
+
+[[package]]
+name = "num_threads"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c539a50b93a303167eded6e8dff5220cd39447409fb659f4cd24b1f72fe4f133"
+dependencies = [
+ "libc",
 ]
 
 [[package]]
@@ -306,6 +363,23 @@ dependencies = [
  "smallvec",
  "winapi",
 ]
+
+[[package]]
+name = "pelite"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8c270b1a0c279bbcb4cff3d2294121731c48ee68f0435d26cf71018a853cb890"
+dependencies = [
+ "dataview",
+ "no-std-compat",
+ "pelite-macros",
+]
+
+[[package]]
+name = "pelite-macros"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7a7cf3f8ecebb0f4895f4892a8be0a0dc81b498f9d56735cb769dc31bf00815b"
 
 [[package]]
 name = "phf"
@@ -492,6 +566,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "rustversion"
+version = "1.0.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f2cc38e8fa666e2de3c4aba7edeb5ffc5246c1c2ed0e3d17e560aeeba736b23f"
+
+[[package]]
 name = "scopeguard"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -585,6 +665,24 @@ dependencies = [
  "quote",
  "syn",
 ]
+
+[[package]]
+name = "time"
+version = "0.3.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "004cbc98f30fa233c61a38bc77e96a9106e65c88f2d3bef182ae952027e5753d"
+dependencies = [
+ "itoa",
+ "libc",
+ "num_threads",
+ "time-macros",
+]
+
+[[package]]
+name = "time-macros"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "25eb0ca3468fc0acc11828786797f6ef9aa1555e4a211a60d64cc8e4d1be47d6"
 
 [[package]]
 name = "ttf-parser"

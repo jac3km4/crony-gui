@@ -7,8 +7,28 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
-egui = "0.17"
-egui-hook = { git = "https://github.com/jac3km4/egui-hook", rev = "v0.0.3" }
 rhai = "1.5"
-phf = { version = "0.10", features = ["macros"] }
 heck = "0.4"
+log = "0.4"
+
+[dependencies.pelite]
+version = "0.9"
+default-features = false
+
+[dependencies.flexi_logger]
+version = "0.22"
+default-features = false
+
+[dependencies.phf]
+version = "0.10"
+default-features = false
+features = ["macros"]
+
+[dependencies.egui]
+version = "0.17"
+default-features = false
+features = ["single_threaded"]
+
+[dependencies.egui-hook]
+git = "https://github.com/jac3km4/egui-hook"
+rev = "v0.0.4"

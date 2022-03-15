@@ -2,6 +2,8 @@ use std::any::TypeId;
 use std::fmt::Debug;
 use std::sync::mpsc;
 
+use egui::{Align2, Color32, Context, FontId, Key, Rounding, Sense, TextEdit, Vec2, Window};
+use flexi_logger::{FileSpec, LogSpecification, Logger, WriteMode};
 use heck::ToSnakeCase;
 use rhai::plugin::CallableFunction;
 use rhai::{Dynamic, Engine, FnAccess, FnNamespace, Module, RegisterNativeFunction, Scope};
@@ -10,8 +12,8 @@ use crate::{elex, handlers};
 
 #[derive(Debug)]
 pub struct ScriptHost {
-    pub(crate) cmd: String,
-    pub(crate) history: String,
+    cmd: String,
+    history: String,
     log_receiver: mpsc::Receiver<String>,
     is_active: bool,
     engine: Engine,
@@ -55,6 +57,7 @@ impl ScriptHost {
 
     pub fn process_events(&mut self) {
         while let Ok(str) = self.log_receiver.try_recv() {
+            log::info!("{}", str);
             self.history.push_str(&str);
             self.history.push('\n');
         }
@@ -62,10 +65,6 @@ impl ScriptHost {
 
     pub fn toggle(&mut self) {
         self.is_active = !self.is_active;
-    }
-
-    pub fn is_active(&self) -> bool {
-        self.is_active
     }
 
     fn create_game_module() -> Module {
@@ -88,6 +87,75 @@ impl ScriptHost {
         module.set_native_fn("get_look_at", || Ok(elex::get_player_look_at()));
         module.set_native_fn("none", || Ok(elex::Entity::null()));
         module
+    }
+}
+
+impl egui_hook::App for ScriptHost {
+    fn render(&mut self, ctx: &Context) {
+        const DEFAULT_SIZE: Vec2 = Vec2::new(600., 320.);
+
+        let was_active = self.is_active();
+        if ctx.input().key_pressed(Key::Home) {
+            self.toggle();
+        }
+        if !self.is_active() {
+            return;
+        }
+
+        Window::new("CRONY GUI")
+            .default_size(DEFAULT_SIZE)
+            .show(ctx, |ui| {
+                let (resp, painter) =
+                    ui.allocate_painter(DEFAULT_SIZE, Sense::focusable_noninteractive());
+
+                painter.rect_filled(resp.rect, Rounding::same(4.), Color32::BLACK);
+                painter.text(
+                    resp.rect.left_bottom(),
+                    Align2::LEFT_BOTTOM,
+                    &self.history,
+                    FontId::monospace(14.),
+                    Color32::WHITE,
+                );
+
+                let input = TextEdit::singleline(&mut self.cmd)
+                    .font(FontId::monospace(14.))
+                    .desired_width(600.)
+                    .show(ui);
+
+                if self.is_active() != was_active {
+                    input.response.request_focus();
+                }
+
+                if ui.input().key_pressed(Key::Enter) {
+                    input.response.request_focus();
+                    self.process_command();
+                };
+                self.process_events();
+            });
+    }
+
+    fn is_active(&self) -> bool {
+        self.is_active
+    }
+
+    fn init() -> bool {
+        Logger::with(LogSpecification::info())
+            .log_to_file(
+                FileSpec::default()
+                    .directory("plugins/logs")
+                    .basename("crony"),
+            )
+            .write_mode(WriteMode::BufferAndFlush)
+            .start()
+            .ok();
+
+        if elex::version_check() {
+            log::info!("C.R.O.N.Y successfully initialized!");
+            true
+        } else {
+            log::error!("Unsupported game version, exiting!");
+            false
+        }
     }
 }
 

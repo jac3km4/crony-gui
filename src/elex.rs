@@ -1,7 +1,8 @@
 use std::borrow::Cow;
-use std::mem::transmute;
+use std::{mem, ptr};
 
 use egui_hook::import_foreign;
+use pelite::pe64::{Pe, PeView};
 
 pub fn get_all_functions<'a>() -> impl Iterator<Item = (Cow<'a, str>, FunctionPtr)> {
     unsafe { &*get_function_registry() }
@@ -9,13 +10,15 @@ pub fn get_all_functions<'a>() -> impl Iterator<Item = (Cow<'a, str>, FunctionPt
         .map(|fun| (fun.name(), fun.ptr()))
 }
 
+#[inline]
 pub fn get_player() -> Entity {
     Entity(get_player_ptr())
 }
 
+#[inline]
 pub fn get_player_look_at() -> Entity {
     let player = get_player();
-    let mut entity = Entity(std::ptr::null());
+    let mut entity = Entity(ptr::null());
     get_player_look_at_ptr(&player, &mut entity);
     entity
 }
@@ -92,14 +95,14 @@ pub struct FunctionPtr(usize);
 impl FunctionPtr {
     #[inline]
     pub fn invoke_default<A>(&self, val: A) -> i64 {
-        let ptr = get_player();
-        let func: extern "C" fn(Entity, Entity, A) -> i64 = unsafe { transmute(self.0) };
-        func(ptr, ptr, val)
+        let player = get_player();
+        let func: extern "C" fn(Entity, Entity, A) -> i64 = unsafe { mem::transmute(self.0) };
+        func(player, player, val)
     }
 
     #[inline]
     pub fn invoke_with<A>(&self, a: Entity, b: Entity, val: A) -> i64 {
-        let func: extern "C" fn(Entity, Entity, A) -> i64 = unsafe { transmute(self.0) };
+        let func: extern "C" fn(Entity, Entity, A) -> i64 = unsafe { mem::transmute(self.0) };
         func(a, b, val)
     }
 }
@@ -145,3 +148,12 @@ pub struct Type;
 // TODO: reverse
 #[repr(C)]
 pub struct GameObject;
+
+const SUPPORTED_VERSION_TS: u32 = 1646857151;
+
+pub fn version_check() -> bool {
+    let handle = unsafe { egui_hook::GetModuleHandleA(egui_hook::PSTR(ptr::null())) };
+    let pe = unsafe { PeView::module(handle.0 as *const _) };
+    let pe_ts = pe.file_header().TimeDateStamp;
+    SUPPORTED_VERSION_TS == pe_ts
+}
