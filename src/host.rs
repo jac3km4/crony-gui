@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use std::sync::mpsc;
 
 use egui::{Align2, Color32, Context, FontId, Key, Rounding, Sense, TextEdit, Vec2, Window};
-use flexi_logger::{FileSpec, LogSpecification, Logger, WriteMode};
+use flexi_logger::{Cleanup, Criterion, FileSpec, LogSpecification, Logger, Naming, WriteMode};
 use heck::ToSnakeCase;
 use rhai::plugin::CallableFunction;
 use rhai::{Dynamic, Engine, FnAccess, FnNamespace, Module, RegisterNativeFunction, Scope};
@@ -139,13 +139,17 @@ impl egui_hook::App for ScriptHost {
     }
 
     fn init() -> bool {
+        let log_file = FileSpec::default()
+            .directory("plugins/logs")
+            .basename("crony");
         Logger::with(LogSpecification::info())
-            .log_to_file(
-                FileSpec::default()
-                    .directory("plugins/logs")
-                    .basename("crony"),
-            )
+            .log_to_file(log_file)
             .write_mode(WriteMode::BufferAndFlush)
+            .rotate(
+                Criterion::Size(16380),
+                Naming::Timestamps,
+                Cleanup::KeepLogFiles(4),
+            )
             .start()
             .ok();
 
