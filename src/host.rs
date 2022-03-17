@@ -27,6 +27,7 @@ impl Default for ScriptHost {
 
         engine.register_static_module("game", ScriptHost::create_game_module().into());
         engine.register_static_module("entity", ScriptHost::create_entity_module().into());
+        engine.register_static_module("item", ScriptHost::create_item_module().into());
 
         engine.register_fn("log", move |val: Dynamic| {
             tx.send(val.to_string()).ok();
@@ -86,6 +87,20 @@ impl ScriptHost {
         module.set_native_fn("get_player", || Ok(elex::get_player()));
         module.set_native_fn("get_look_at", || Ok(elex::get_player_look_at()));
         module.set_native_fn("none", || Ok(elex::Entity::null()));
+        module.set_native_fn("is_none", |entity: elex::Entity| Ok(entity.is_null()));
+        module
+    }
+
+    fn create_item_module() -> Module {
+        let mut module = Module::new();
+        module.set_native_fn("resolve", |name: &str| Ok(elex::resolve_item(name)));
+        module.set_native_fn(
+            "give",
+            |target: elex::Entity, item: elex::Entity, quantity: i64, x: i64, notify: bool| {
+                elex::give_item(&target, &item, quantity as u32, x as u32, notify.into());
+                Ok(())
+            },
+        );
         module
     }
 }
@@ -105,8 +120,7 @@ impl egui_hook::App for ScriptHost {
         Window::new("CRONY GUI")
             .default_size(DEFAULT_SIZE)
             .show(ctx, |ui| {
-                let (resp, painter) =
-                    ui.allocate_painter(DEFAULT_SIZE, Sense::focusable_noninteractive());
+                let (resp, painter) = ui.allocate_painter(DEFAULT_SIZE, Sense::focusable_noninteractive());
 
                 painter.rect_filled(resp.rect, Rounding::same(4.), Color32::BLACK);
                 painter.text(
@@ -139,9 +153,7 @@ impl egui_hook::App for ScriptHost {
     }
 
     fn init() -> bool {
-        let log_file = FileSpec::default()
-            .directory("plugins/logs")
-            .basename("crony");
+        let log_file = FileSpec::default().directory("plugins/logs").basename("crony");
         Logger::with(LogSpecification::info())
             .log_to_file(log_file)
             .write_mode(WriteMode::BufferAndFlush)

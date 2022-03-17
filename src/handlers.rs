@@ -29,4 +29,16 @@ static CUSTOM_HANDLERS: phf::Map<&'static str, CustomHandler> = phf_map! {
     "join_player_party" => custom_handler! { |ptr: FunctionPtr|
         move |entity: Entity| ptr.invoke_with(entity, Entity::null(), ())
     },
+    "dismiss_player_party" => custom_handler! { |ptr: FunctionPtr|
+        move |entity: Entity| ptr.invoke_with(entity, Entity::null(), ())
+    },
+    "spawn_new_entity" => custom_handler! { |ptr: FunctionPtr|
+        move |pos: Entity, entity: Entity| ptr.invoke_with(pos, entity, ())
+    },
+    "remove_npc" => custom_handler! { |ptr: FunctionPtr|
+        move |npc: Entity| ptr.invoke_with(npc, Entity::null(), ())
+    },
+    "place_summoned_party_member" => custom_handler! { |ptr: FunctionPtr|
+        move |leader: Entity, member: Entity| ptr.invoke_with(leader, member, ())
+    },
 };

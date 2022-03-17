@@ -1,31 +1,46 @@
 use std::borrow::Cow;
+use std::ffi::CString;
 use std::{mem, ptr};
 
-use egui_hook::import_foreign;
+use memhack_derive::foreign_fn;
 use pelite::pe64::{Pe, PeView};
 
 pub fn get_all_functions<'a>() -> impl Iterator<Item = (Cow<'a, str>, FunctionPtr)> {
-    unsafe { &*get_function_registry() }
+    get_function_registry()
         .functions()
         .map(|fun| (fun.name(), fun.ptr()))
 }
 
-#[inline]
-pub fn get_player() -> Entity {
-    Entity(get_player_ptr())
-}
-
-#[inline]
 pub fn get_player_look_at() -> Entity {
     let player = get_player();
-    let mut entity = Entity(ptr::null());
-    get_player_look_at_ptr(&player, &mut entity);
+    let mut entity = Entity::null();
+    get_player_look_at_ref(&player, &mut entity);
     entity
 }
 
-import_foreign!(0x0867080, get_function_registry() -> *const FunctionRegistry);
-import_foreign!(0x040B710, get_player_ptr() -> *const GameObject);
-import_foreign!(0x0B17FF0, get_player_look_at_ptr(player: *const Entity, entity: *mut Entity) -> ());
+pub fn resolve_item(name: &str) -> Entity {
+    let mut item = Entity::null();
+    if let Ok(str) = CString::new(name) {
+        resolve_item_by_cstr(&mut item, str.as_ptr());
+    }
+    item
+}
+
+#[inline]
+#[foreign_fn(0x040B710)]
+pub fn get_player() -> Entity {}
+#[inline]
+#[foreign_fn(0x0867080)]
+fn get_function_registry<'a>() -> &'a FunctionRegistry {}
+#[inline]
+#[foreign_fn(0x0B17FF0)]
+fn get_player_look_at_ref(player: &Entity, entity: &mut Entity) -> () {}
+#[inline]
+#[foreign_fn(0x0B30C00)]
+fn resolve_item_by_cstr(item: &mut Entity, name: *const i8) -> () {}
+#[inline]
+#[foreign_fn(0x0B13020)]
+pub fn give_item(target: &Entity, item: &Entity, quantity: u32, x: u32, notify: Notify) -> () {}
 
 #[derive(Debug, Clone, Copy)]
 #[repr(C)]
@@ -35,6 +50,28 @@ impl Entity {
     #[inline]
     pub fn null() -> Entity {
         Entity(std::ptr::null())
+    }
+
+    #[inline]
+    pub fn is_null(&self) -> bool {
+        self.0.is_null()
+    }
+}
+
+#[repr(u32)]
+pub enum Notify {
+    Never = 0,
+    Always = 2,
+}
+
+impl From<bool> for Notify {
+    #[inline]
+    fn from(notify: bool) -> Self {
+        if notify {
+            Notify::Always
+        } else {
+            Notify::Never
+        }
     }
 }
 

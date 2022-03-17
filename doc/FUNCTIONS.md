@@ -6,6 +6,9 @@ All game functions are in a `game` namespace.
 // give yourself 1 XP
 game::give_xp(1)
 
+// give player 10 energy ammo
+item::give(entity::get_player(), item::resolve("It_Ammo_Energy"), 10, 0, true)
+
 // add the NPC you're looking at to the party
 game::join_player_party(entity::get_look_at())
 
@@ -28,13 +31,17 @@ game::on_quest_success_player_traitor_to_humanity()
 ### function list
 - `advance_time(hours: i64)`
 - `auto_loot(looter: Entity, target: Entity)`
+- `dismiss_player_party(npc: Entity)`
 - `give_quest_xp(amount: i64)`
 - `give_xp(amount: i64)`
 - `join_player_party(npc: Entity)`
 - `kill(instigator: Entity, target: Entity)`
 - `on_info_advance_playing_time_by_hours(hours: i64)`
+- `place_summoned_party_member(leader: Entity, member: Entity)`
+- `remove_npc(npc: Entity)`
 - `set_player_rank(rank: i64)`
 - `set_target_hour(hour: i64)`
+- `spawn_new_entity(pos: Entity, entity: Entity)`
 - `movement_callback()`
 - `movement_sneaking_callback()`
 - `movement_blocked_callback()`
@@ -3811,7 +3818,6 @@ game::on_quest_success_player_traitor_to_humanity()
 - `can_wait_player_party()`
 - `is_party_under_attack()`
 - `can_dismiss_player_party()`
-- `dismiss_player_party()`
 - `dismiss_party_member()`
 - `can_join_player_party()`
 - `is_not_summoned()`
@@ -3847,8 +3853,6 @@ game::on_quest_success_player_traitor_to_humanity()
 - `set_routine_continue_routine()`
 - `set_human_rtn_dead()`
 - `on_quest_lock_ai_result()`
-- `spawn_new_entity()`
-- `remove_npc()`
 - `rtn_teleport_to_location()`
 - `teleport_player_with_routine()`
 - `teleport_player()`
@@ -4113,7 +4117,6 @@ game::on_quest_success_player_traitor_to_humanity()
 - `on_process_projection()`
 - `on_end_projection()`
 - `routine_power_projection()`
-- `place_summoned_party_member()`
 - `can_cast_power_projection()`
 - `power_projection()`
 - `spell_camouflage_on_ui_info()`
