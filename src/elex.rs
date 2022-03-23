@@ -27,19 +27,19 @@ pub fn resolve_item(name: &str) -> Entity {
 }
 
 #[inline]
-#[foreign_fn(0x040B710)]
+#[foreign_fn(0x040B820)]
 pub fn get_player() -> Entity {}
 #[inline]
-#[foreign_fn(0x0867080)]
+#[foreign_fn(0x0867310)]
 fn get_function_registry<'a>() -> &'a FunctionRegistry {}
 #[inline]
-#[foreign_fn(0x0B17FF0)]
+#[foreign_fn(0x0B1A140)]
 fn get_player_look_at_ref(player: &Entity, entity: &mut Entity) -> () {}
 #[inline]
-#[foreign_fn(0x0B30C00)]
+#[foreign_fn(0x0B32D50)]
 fn resolve_item_by_cstr(item: &mut Entity, name: *const i8) -> () {}
 #[inline]
-#[foreign_fn(0x0B13020)]
+#[foreign_fn(0x0B15170)]
 pub fn give_item(target: &Entity, item: &Entity, quantity: u32, x: u32, notify: Notify) -> () {}
 
 #[derive(Debug, Clone, Copy)]
@@ -186,11 +186,8 @@ pub struct Type;
 #[repr(C)]
 pub struct GameObject;
 
-const SUPPORTED_VERSION_TS: u32 = 1646857151;
-
-pub fn version_check() -> bool {
+pub fn check_version() -> u32 {
     let handle = unsafe { egui_hook::GetModuleHandleA(egui_hook::PSTR(ptr::null())) };
     let pe = unsafe { PeView::module(handle.0 as *const _) };
-    let pe_ts = pe.file_header().TimeDateStamp;
-    SUPPORTED_VERSION_TS == pe_ts
+    pe.file_header().TimeDateStamp
 }

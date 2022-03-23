@@ -165,11 +165,14 @@ impl egui_hook::App for ScriptHost {
             .start()
             .ok();
 
-        if elex::version_check() {
+        const SUPPORTED_VERSION_TS: u32 = 1647620648;
+        let found_version = elex::check_version();
+
+        if found_version == SUPPORTED_VERSION_TS {
             log::info!("C.R.O.N.Y successfully initialized!");
             true
         } else {
-            log::error!("Unsupported game version, exiting!");
+            log::error!("Unsupported game version ({found_version}), exiting!");
             false
         }
     }
