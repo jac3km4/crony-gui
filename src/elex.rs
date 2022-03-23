@@ -18,7 +18,7 @@ pub fn get_player_look_at() -> Entity {
     entity
 }
 
-pub fn resolve_item(name: &str) -> Entity {
+pub fn resolve_entity(name: &str) -> Entity {
     let mut item = Entity::null();
     if let Ok(str) = CString::new(name) {
         resolve_item_by_cstr(&mut item, str.as_ptr());

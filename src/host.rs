@@ -88,12 +88,12 @@ impl ScriptHost {
         module.set_native_fn("get_look_at", || Ok(elex::get_player_look_at()));
         module.set_native_fn("none", || Ok(elex::Entity::null()));
         module.set_native_fn("is_none", |entity: elex::Entity| Ok(entity.is_null()));
+        module.set_native_fn("resolve", |name: &str| Ok(elex::resolve_entity(name)));
         module
     }
 
     fn create_item_module() -> Module {
         let mut module = Module::new();
-        module.set_native_fn("resolve", |name: &str| Ok(elex::resolve_item(name)));
         module.set_native_fn(
             "give",
             |target: elex::Entity, item: elex::Entity, quantity: i64, x: i64, notify: bool| {

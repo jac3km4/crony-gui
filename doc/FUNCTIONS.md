@@ -7,7 +7,7 @@ All game functions are in a `game` namespace.
 game::give_xp(1)
 
 // give player 10 energy ammo
-item::give(entity::get_player(), item::resolve("It_Ammo_Energy"), 10, 0, true)
+item::give(entity::get_player(), entity::resolve("It_Ammo_Energy"), 10, 0, true)
 
 // add the NPC you're looking at to the party
 game::join_player_party(entity::get_look_at())
