@@ -2,7 +2,7 @@
 All game functions are in a `game` namespace.
 
 ### examples
-```rhai
+```rs
 // give yourself 1 XP
 game::give_xp(1)
 

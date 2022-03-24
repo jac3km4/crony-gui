@@ -4,7 +4,7 @@
 The mod below checks for a target to loot every 30 frames.
 To run it, save the code below in `ELEX2\system\plugins\crony\autoloot\main.rhai`.
 
-```rhai
+```rs
 fn initial_state() {
     #{ ticks: 0 }
 }
