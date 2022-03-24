@@ -1,12 +1,16 @@
 use std::any::TypeId;
+use std::cell::RefCell;
 use std::fmt::Debug;
+use std::path::PathBuf;
+use std::rc::Rc;
 use std::sync::mpsc;
+use std::{fs, io};
 
 use egui::{Align2, Color32, Context, FontId, Key, Rounding, Sense, TextEdit, Vec2, Window};
 use flexi_logger::{Cleanup, Criterion, FileSpec, LogSpecification, Logger, Naming, WriteMode};
 use heck::ToSnakeCase;
 use rhai::plugin::CallableFunction;
-use rhai::{Dynamic, Engine, FnAccess, FnNamespace, Module, RegisterNativeFunction, Scope};
+use rhai::*;
 
 use crate::{elex, handlers};
 
@@ -18,6 +22,7 @@ pub struct ScriptHost {
     is_active: bool,
     engine: Engine,
     scope: Scope<'static>,
+    mods: Vec<Mod>,
 }
 
 impl Default for ScriptHost {
@@ -40,6 +45,7 @@ impl Default for ScriptHost {
             is_active: false,
             engine,
             scope: Scope::new(),
+            mods: vec![],
         }
     }
 }
@@ -61,6 +67,14 @@ impl ScriptHost {
             log::info!("{}", str);
             self.history.push_str(&str);
             self.history.push('\n');
+        }
+    }
+
+    fn process_frame(&mut self) {
+        for mod_ in &mut self.mods {
+            let _res: Result<(), _> = self
+                .engine
+                .call_fn(&mut mod_.scope, &mod_.ast, "on_frame", vec![mod_.state.clone()]);
         }
     }
 
@@ -103,11 +117,54 @@ impl ScriptHost {
         );
         module
     }
+
+    fn verify_version() -> bool {
+        const SUPPORTED_VERSION_TS: u32 = 1647620648;
+        let found_version = elex::check_version();
+
+        if found_version == SUPPORTED_VERSION_TS {
+            log::info!("C.R.O.N.Y successfully initialized!");
+            true
+        } else {
+            log::error!("Unsupported game version ({found_version}), exiting!");
+            false
+        }
+    }
+
+    fn load_mods(&mut self) -> Result<(), io::Error> {
+        let dir = std::env::current_exe()?
+            .parent()
+            .expect("no exe parent")
+            .join("plugins")
+            .join("crony");
+        for entry in fs::read_dir(dir)? {
+            let entry = entry?;
+            if entry.file_type()?.is_dir() {
+                let main = entry.path().join("main.rhai");
+                if main.exists() {
+                    match self.init_mod(main.clone()) {
+                        Ok(()) => log::info!("Successfully loaded {}", main.display()),
+                        Err(err) => log::info!("Failed to initilize {}: {}", main.display(), err),
+                    }
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    fn init_mod(&mut self, path: PathBuf) -> Result<(), Box<EvalAltResult>> {
+        let ast = self.engine.compile_file(path)?;
+        let mut scope = Scope::new();
+        let state = self.engine.call_fn(&mut scope, &ast, "initial_state", ())?;
+        self.mods.push(Mod::new(ast, scope, state));
+        Ok(())
+    }
 }
 
 impl egui_hook::App for ScriptHost {
     fn render(&mut self, ctx: &Context) {
-        const DEFAULT_SIZE: Vec2 = Vec2::new(600., 320.);
+        self.process_frame();
 
         let was_active = self.is_active();
         if ctx.input().key_pressed(Key::Home) {
@@ -116,6 +173,8 @@ impl egui_hook::App for ScriptHost {
         if !self.is_active() {
             return;
         }
+
+        const DEFAULT_SIZE: Vec2 = Vec2::new(600., 320.);
 
         Window::new("CRONY GUI")
             .default_size(DEFAULT_SIZE)
@@ -165,15 +224,29 @@ impl egui_hook::App for ScriptHost {
             .start()
             .ok();
 
-        const SUPPORTED_VERSION_TS: u32 = 1647620648;
-        let found_version = elex::check_version();
+        Self::verify_version()
+    }
 
-        if found_version == SUPPORTED_VERSION_TS {
-            log::info!("C.R.O.N.Y successfully initialized!");
-            true
-        } else {
-            log::error!("Unsupported game version ({found_version}), exiting!");
-            false
+    fn setup(&mut self, _ctx: &Context) {
+        if let Err(err) = self.load_mods() {
+            log::warn!("Failed to load mods: {err}")
+        }
+    }
+}
+
+#[derive(Debug)]
+struct Mod {
+    ast: AST,
+    scope: Scope<'static>,
+    state: Rc<RefCell<Dynamic>>,
+}
+
+impl Mod {
+    fn new(ast: AST, scope: Scope<'static>, state: Dynamic) -> Self {
+        Self {
+            ast,
+            scope,
+            state: Rc::new(RefCell::new(state)),
         }
     }
 }
