@@ -1,4 +1,9 @@
 ## Modding
+All script files found at `ELEX2\system\plugins\crony\{mod_name}\main.rhai` get loaded on game startup.
+
+Mods are expected to expose 2 functions:
+- `initial_state` - initialization of any state required by the mod
+- `on_frame` - callback on every game frame
 
 ## example autoloot mod
 The mod below checks for a target to loot every 30 frames.
