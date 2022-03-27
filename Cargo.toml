@@ -7,9 +7,12 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
+anyhow = "1"
 rhai = "1.5"
 heck = "0.4"
 log = "0.4"
+dynasmrt = "1.2"
+detour = "0.8"
 
 [dependencies.pelite]
 version = "0.9"

@@ -1,17 +1,22 @@
 use std::any::TypeId;
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::fmt::Debug;
 use std::path::PathBuf;
 use std::rc::Rc;
 use std::sync::mpsc;
 use std::{fs, io};
 
+use anyhow::Result;
+use detour::RawDetour;
+use dynasmrt::{dynasm, DynasmApi, ExecutableBuffer};
 use egui::{Align2, Color32, Context, FontId, Key, Rounding, Sense, TextEdit, Vec2, Window};
 use flexi_logger::{Cleanup, Criterion, FileSpec, LogSpecification, Logger, Naming, WriteMode};
 use heck::ToSnakeCase;
 use rhai::plugin::CallableFunction;
 use rhai::*;
 
+use crate::elex::FunctionPtr;
 use crate::{elex, handlers};
 
 #[derive(Debug)]
@@ -30,12 +35,24 @@ impl Default for ScriptHost {
         let mut engine = Engine::new();
         let (tx, tr) = mpsc::channel();
 
-        engine.register_static_module("game", ScriptHost::create_game_module().into());
+        let mut functions = HashMap::new();
+        for (name, ptr) in elex::get_all_functions() {
+            functions.insert(name.to_snake_case(), ptr);
+        }
+        let overrides = Rc::new(RefCell::new(vec![]));
+
+        engine.register_static_module("game", ScriptHost::create_game_module(&functions).into());
         engine.register_static_module("entity", ScriptHost::create_entity_module().into());
         engine.register_static_module("item", ScriptHost::create_item_module().into());
 
         engine.register_fn("log", move |val: Dynamic| {
             tx.send(val.to_string()).ok();
+        });
+
+        engine.register_fn("override_value", move |name: &str, val: i64| {
+            if let Err(err) = Self::override_return_val(&functions, overrides.clone(), name, val) {
+                log::error!("Override has failed: {err}");
+            }
         });
 
         Self {
@@ -82,15 +99,14 @@ impl ScriptHost {
         self.is_active = !self.is_active;
     }
 
-    fn create_game_module() -> Module {
+    fn create_game_module(map: &HashMap<String, FunctionPtr>) -> Module {
         let mut module = Module::new();
-
-        for (name, ptr) in elex::get_all_functions() {
-            let name = name.to_snake_case();
-            if let Some(custom_handler) = handlers::get_custom_handler(&name) {
-                custom_handler(ptr).add(&name, &mut module);
+        for (name, ptr) in map {
+            let ptr = ptr.clone();
+            if let Some(custom_handler) = handlers::get_custom_handler(name) {
+                custom_handler(ptr).add(name, &mut module);
             } else {
-                module.set_native_fn(&name, move || Ok(ptr.invoke_default(())));
+                module.set_native_fn(name.as_str(), move || Ok(ptr.invoke_default(())));
             }
         }
         module
@@ -116,6 +132,32 @@ impl ScriptHost {
             },
         );
         module
+    }
+
+    fn override_return_val(
+        funs: &HashMap<String, FunctionPtr>,
+        overrides: Rc<RefCell<Vec<(ExecutableBuffer, RawDetour)>>>,
+        name: &str,
+        val: i64,
+    ) -> Result<()> {
+        let ptr = funs
+            .get(name)
+            .ok_or_else(|| anyhow::anyhow!("Function {name} not found"))?;
+        let mut ops = dynasmrt::x64::Assembler::new()?;
+        let start = ops.offset();
+        dynasm!(ops
+            ; .arch x64
+            ; mov rax, QWORD val
+            ; ret
+        );
+        let buffer = ops.finalize().unwrap();
+        unsafe {
+            let detour = RawDetour::new(ptr.value() as _, buffer.ptr(start) as _)?;
+            detour.enable()?;
+            overrides.borrow_mut().push((buffer, detour));
+        };
+
+        Ok(())
     }
 
     fn verify_version() -> bool {

@@ -142,6 +142,10 @@ impl FunctionPtr {
         let func: extern "C" fn(Entity, Entity, A) -> i64 = unsafe { mem::transmute(self.0) };
         func(a, b, val)
     }
+
+    pub(crate) fn value(&self) -> usize {
+        self.0
+    }
 }
 
 #[derive(Debug)]
